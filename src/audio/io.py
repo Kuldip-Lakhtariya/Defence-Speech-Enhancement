@@ -9,6 +9,16 @@ COMMIT NOTE: commit after simulate_dual_mic_from_clean_noisy() is confirmed
 to fix the negative-SNR evaluation bug (metrics.py used simulate_dual_mic on
 the full noisy signal, so the reference channel carried almost the same
 speech as the primary channel, and NLMS cancelled speech along with noise).
+
+STEREO-DOWNMIX NOTE: load_audio_file() no longer blindly averages stereo
+channels. A WhatsApp voice-note test file was genuinely stereo (2 different,
+non-duplicate channels) and sounded bad after enhancement. Blind averaging
+of two independent channels risks partial phase cancellation of the voice
+at load time, before the model ever sees it - that is a plausible real
+cause distinct from the DeepFilterNet3 stage itself. The fix below checks
+channel similarity and only averages when it is safe to do so; otherwise it
+picks the higher-energy channel instead of blending. This has NOT yet been
+confirmed against the actual WhatsApp file - test that before trusting it.
 """
 
 import yaml
@@ -24,6 +34,55 @@ def _load_config(config_path: str = "configs/config.yaml") -> dict:
         return yaml.safe_load(config_file)
 
 
+def _downmix_channels(audio_samples: np.ndarray, correlation_threshold: float = 0.95) -> np.ndarray:
+    """
+    Reduce a multi-channel signal to mono without risking phase
+    cancellation of independent content.
+
+    audio_samples is expected in (frames, channels) shape, as returned by
+    soundfile.read(). If the channels are highly correlated (normalized
+    cross-correlation at zero lag above correlation_threshold), they are
+    treated as near-duplicates of the same source and averaged, which is
+    the standard safe downmix. If they diverge more than that, they are
+    treated as carrying independent content, and the channel with higher
+    RMS energy is used directly instead of blending - blending independent
+    channels can partially cancel the signal via phase differences.
+
+    correlation_threshold is a heuristic, not a validated constant - it has
+    not yet been checked against a real problematic stereo file.
+
+    Returns a 1D mono array.
+    """
+    if audio_samples.ndim == 1:
+        return audio_samples
+
+    channel_one = audio_samples[:, 0]
+    channel_two = audio_samples[:, 1]
+
+    std_one = np.std(channel_one)
+    std_two = np.std(channel_two)
+
+    if std_one < 1e-9 or std_two < 1e-9:
+        correlation = 0.0
+    else:
+        correlation = float(np.corrcoef(channel_one, channel_two)[0, 1])
+
+    if correlation >= correlation_threshold:
+        return np.mean(audio_samples, axis=1)
+
+    rms_one = np.sqrt(np.mean(channel_one ** 2))
+    rms_two = np.sqrt(np.mean(channel_two ** 2))
+    chosen_channel = channel_one if rms_one >= rms_two else channel_two
+
+    print(
+        f"Stereo channels diverge (correlation={correlation:.3f}, "
+        f"below {correlation_threshold}) - using higher-energy channel "
+        f"instead of averaging to avoid phase cancellation."
+    )
+
+    return chosen_channel
+
+
 def load_audio_file(file_path: str, config_path: str = "configs/config.yaml") -> np.ndarray:
     config = _load_config(config_path)
     target_sample_rate = config["audio"]["sample_rate"]
@@ -35,7 +94,7 @@ def load_audio_file(file_path: str, config_path: str = "configs/config.yaml") ->
     audio_samples, original_sample_rate = sf.read(str(file_path), dtype="float32")
 
     if audio_samples.ndim > 1:
-        audio_samples = np.mean(audio_samples, axis=1)
+        audio_samples = _downmix_channels(audio_samples)
 
     if original_sample_rate != target_sample_rate:
         audio_samples = librosa.resample(
