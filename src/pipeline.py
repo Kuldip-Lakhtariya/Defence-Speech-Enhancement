@@ -71,7 +71,6 @@ work - revisit if you want it config-driven later.
 """
 
 import numpy as np
-import torch
 import yaml
 from scipy.signal import resample_poly
 
@@ -134,7 +133,6 @@ def enhance_dtln_stage(primary_mic_path: str, reference_mic_path: str,
     model, df_state = _get_deepfilter_model(config_path)
 
     primary_48k = _resample(primary_signal, pipeline_sr, DEEPFILTER_SAMPLE_RATE)
-    primary_tensor = torch.from_numpy(primary_48k).unsqueeze(0)
 
     try:
         enhanced_48k = enhance(model, df_state, primary_tensor)
