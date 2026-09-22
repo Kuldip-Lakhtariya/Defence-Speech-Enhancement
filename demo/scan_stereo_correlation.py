@@ -19,8 +19,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-NOISY_DIR = os.path.join(PROJECT_ROOT, "data", "processed", "synthetic_defence_test", "noisy")
-CLEAN_DIR = os.path.join(PROJECT_ROOT, "data", "processed", "synthetic_defence_test", "clean")
+NOISY_DIR = os.path.join(PROJECT_ROOT, "data", "l3das22_converted", "noisy")
+CLEAN_DIR = os.path.join(PROJECT_ROOT, "data", "l3das22_converted", "clean")
 CORRELATION_THRESHOLD = 0.95
 
 

@@ -34,11 +34,11 @@ if PROJECT_ROOT not in sys.path:
 from demo.live_demo import compute_snr_db
 import src.df_onnx_dsp as wrap
 
-NOISY_DIR = os.path.join(PROJECT_ROOT, "data", "processed", "synthetic_defence_test", "noisy")
-CLEAN_DIR = os.path.join(PROJECT_ROOT, "data", "processed", "synthetic_defence_test", "clean")
-ONNX_DIR = os.path.join(PROJECT_ROOT, "models", "onnx_export")
+NOISY_DIR = os.path.join(PROJECT_ROOT, "data", "l3das22_converted", "noisy")
+CLEAN_DIR = os.path.join(PROJECT_ROOT, "data", "l3das22_converted", "clean")
+ONNX_DIR = os.path.join(PROJECT_ROOT, "models", "onnx_export_v2")
 CORRELATION_THRESHOLD = 0.95
-MAX_FILES = 50
+MAX_FILES = 10
 
 
 def downmix(data):
@@ -103,8 +103,11 @@ def evaluate_file(noisy_path, clean_path, enc_session, erb_dec_session, df_dec_s
         stoi_value = None
 
     try:
-        pesq_mode = "wb" if native_sr >= 16000 else "nb"
-        pesq_value = float(pesq(native_sr, clean, enhanced, pesq_mode))
+        pesq_sr = 16000  # pesq() only accepts exactly 8000 or 16000
+        pesq_mode = "wb"
+        clean_pesq = librosa.resample(clean, orig_sr=native_sr, target_sr=pesq_sr) if native_sr != pesq_sr else clean
+        enhanced_pesq = librosa.resample(enhanced, orig_sr=native_sr, target_sr=pesq_sr) if native_sr != pesq_sr else enhanced
+        pesq_value = float(pesq(pesq_sr, clean_pesq, enhanced_pesq, pesq_mode))
     except Exception:
         pesq_value = None
 
