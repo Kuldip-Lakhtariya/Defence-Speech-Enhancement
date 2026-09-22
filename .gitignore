@@ -4,6 +4,11 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
+# L3DAS22 converted/extracted data — large audio, regenerate via
+# data/prepare_l3das22.py and data/extract_l3das22_noise.py
+data/l3das22_converted/
+data/l3das22_noise_extracted/
+
 # Large source zips at repo root — regenerable from Drive, would exceed
 # GitHub's file size limits anyway (multi-GB)
 *.zip
@@ -11,6 +16,9 @@ data/processed/*
 # Trained weights and exported models — large binaries, regenerate via training scripts
 checkpoints/*
 !checkpoints/.gitkeep
+
+# Demo run outputs — regenerate by rerunning eval scripts
+demo/output/
 
 # Standard Python
 __pycache__/
@@ -34,8 +42,4 @@ external/DTLN/
 external/DeepFilterNet3/
 external/DeepFilterNet/
 !external/DeepFilterNet3_finetuned/
-<<<<<<< HEAD
 !external/DeepFilterNet3_finetuned/**
-=======
-!external/DeepFilterNet3_finetuned/**
->>>>>>> 586257b90b8e9094a870d5d25d3b10ef0e1284e3
