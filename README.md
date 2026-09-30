@@ -25,13 +25,7 @@ Real-time speech enhancement for a dual-mic (primary + reference) defence headse
 
 How audio actually flows through the model, live:
 
-![AI Model Pipeline](PASTE_LINK_HERE)
-
-## Hardware Pipeline
-
-How this maps onto the physical headset + edge device:
-
-![Hardware Pipeline](PASTE_LINK_HERE)
+![AI Model Pipeline](Workflow/Model_Workflow.png)
 
 ---
 
